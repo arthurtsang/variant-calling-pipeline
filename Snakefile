@@ -7,7 +7,7 @@ SNPEFF_DB = "Saccharomyces_cerevisiae_yjm996"
 # FASTQ
 FASTQDIR = "/home/ubuntu/snakemake/saccharomyces_cerevisia/fastq"
 EXPERIMENT="SRR7175545"
-FASTQURL="ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR717/005/"
+FASTQURL="ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR717/005"
 
 include: "initialize/Snakefile"
 include: "preprocess/Snakefile"

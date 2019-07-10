@@ -12,7 +12,8 @@ rule align_reads:
     fastq=expand( "{dir}/{exp}_{read}.fastq.gz", dir = [ FASTQDIR ], exp = [ EXPERIMENT ], read = ["1", "2"]),
     initialized="output/initialized"
   output: temp( "output/aligned_reads.sam" )
-  shell: "bwa mem -M -R '@RG\\tID:$file\\tLB:$file\\tPL:$PL\\tPM:$PM\\tSM:$file' {REF} {input.fastq} > {output}"
+  threads: 2
+  shell: "bwa mem -t {threads} -M -R '@RG\\tID:$file\\tLB:$file\\tPL:$PL\\tPM:$PM\\tSM:$file' {REF} {input.fastq} > {output}"
 
 rule sort_sam:
   """Sort SAM file by coordinate, convert to BAM"""

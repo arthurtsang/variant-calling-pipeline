@@ -10,8 +10,16 @@ rule snpeff:
   """
   conda: "conda.yml"
   input: "output/filtered_snps_final.vcf"
-  output: "output/filtered_snps_final.ann.vcf"
-  shell: "snpEff -v {SNPEFF_DB} {input}  > {output}"
+  output: 
+    vcf="output/filtered_snps_final.ann.vcf",
+    gene="output/snpEff_genes.txt",
+    summary="output/snpEff_summary.txt"
+  threads: 2
+  shell: 
+    """
+      snpEff -t {threads} -v {SNPEFF_DB} {input}  > {output}
+      mv snpEff* output
+    """
 
 rule coverage_statistics:
   """Compute Coverage Statistics
@@ -34,5 +42,5 @@ rule compile_statistics:
     "output/filtered_snps_final.vcf",
     "output/depth_out.txt"
   output: "output/report.csv"
-  shell: "parse_metrics.sh output"
+  shell: "annotation/parse_metrics.sh output"
   

@@ -1,0 +1,56 @@
+rule recal:
+  input: 
+    "output/filtered_indels_final.vcf",
+    "output/filtered_indels_final.vcf"
+  output: touch( "output/recaled" )
+
+rule call_variants_2:
+  """Call Variants
+  Second round of variant calling performed on recalibrated bam
+  """
+  conda: "conda.yml"
+  input: "output/recal_reads.bam"
+  output: "output/raw_variants_recal.vcf"
+  shell: "gatk -T HaplotypeCaller -R {REF} -I {input} -o {output}"
+
+rule extract_snps_2:
+  """Extract SNPs
+  This step separates SNPs so they can be processed and analyzed independently
+  """
+  conda: "conda.yml"
+  input: rules.call_variants_2.output
+  output: "output/raw_snps_recal.vcf"
+  shell: "gatk -T SelectVariants -R {REF} -V {input} -selectType SNP -o {output}"
+
+rule extract_indel_2:
+  """Extract Indels
+  This step separates Indels so they can be processed and analyzed independently
+  """
+  conda: "conda.yml"
+  input: rules.call_variants_2.output
+  output: "output/raw_indels_recal.vcf"
+  shell: "gatk -T SelectVariants -R {REF} -V {input} -selectType INDEL -o {output}"
+
+rule filter_snps_2:
+  """Filter SNPs
+  Note: SNPs which are ‘filtered out’ at this step will remain in the filtered_snps_final.vcf file, however they will be marked as ‘basic_snp_filter’, while SNPs which passed the filter will be marked as ‘PASS’
+  """
+  conda: "conda.yml"
+  input: rules.extract_snps_2.output
+  output: "output/filtered_snps_final.vcf"
+  shell:
+    """
+      gatk -T VariantFiltration -R {REF} -V {input} -filterName "QD_filter" -filter "QD < 2.0" -filterName "FS_filter" -filter "FS > 60.0" -filterName "MQ_filter" -filter "MQ < 40.0" -filterName "SOR_filter" -filter "SOR > 4.0" -o {output}
+    """
+
+rule filter_indel_2:
+  """Filter Indels
+   Indelss which are ‘filtered out’ at this step will remain in the filtered_indels_recal.vcf file, however they will be marked as ‘basic_indel_filter’, while Indels which passed the filter will be marked as ‘PASS’
+  """
+  conda: "conda.yml"
+  input: rules.extract_indel_2.output
+  output: "output/filtered_indels_final.vcf"
+  shell: 
+    """
+      gatk -T VariantFiltration -R {REF} -V {input} -filterName "QD_filter" -filter "QD < 2.0" -filterName "FS_filter" -filter "FS > 200.0" -filterName "SOR_filter" -filter "SOR > 10.0" -o {output}
+    """

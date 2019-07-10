@@ -1,0 +1,8 @@
+channels:
+  - bioconda
+dependencies:
+  - gatk4=4.0.5.1
+  - bwa=0.7.17
+  - samtools=1.9
+  - picard=2.18.7
+  - r

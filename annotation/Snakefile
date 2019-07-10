@@ -1,0 +1,38 @@
+rule annotation:
+  input:
+    "output/report.csv",
+    "output/filtered_snps_final.ann.vcf",
+    "output/genomecov.bedgraph"
+  output: touch( "output/annotated" )
+
+rule snpeff:
+  """Annotate SNPs and Predict Effects
+  """
+  conda: "conda.yml"
+  input: "output/filtered_snps_final.vcf"
+  output: "output/filtered_snps_final.ann.vcf"
+  shell: "-v {SNPEFF_DB} {input}  > {output}"
+
+rule coverage_statistics:
+  """Compute Coverage Statistics
+  Load the genomecov.bedgraph file into IGV to view a coverage map at the entire genome or chromosome level
+  """
+  conda: "conda.yml"
+  input: "output/recal_reads.bam"
+  output: "output/genomecov.bedgraph"
+  shell: "bedtools genomecov -bga -ibam {input} > {output}"
+
+rule compile_statistics:
+  """Compile Statistics"""
+  conda: "conda.yml"
+  input: 
+    "output/alignment_metrics.txt",
+    "output/insert_metrics.txt",
+    "output/raw_snps.vcf",
+    "output/filtered_snps.vcf",
+    "output/raw_snps_recal.vcf",
+    "output/filtered_snps_final.vcf",
+    "output/depth_out.txt"
+  output: "output/report.csv"
+  shell: "parse_metrics.sh output"
+  

@@ -1,0 +1,4 @@
+output/
+saccharomyces_cerevisia/fastq/
+saccharomyces_cerevisia/ref/
+.snakemake/

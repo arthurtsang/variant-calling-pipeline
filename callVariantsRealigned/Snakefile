@@ -1,0 +1,52 @@
+rule realign:
+  input: 
+    "output/filtered_indels.vcf",
+    "output/filtered_snps.vcf"
+  output:
+    touch( "output/realigned" )
+
+rule call_variants_1:
+  """Call Variants
+  First round of variant calling. The variants identified in this step will be filtered and provided as input for Base Quality Score Recalibration
+  """
+  conda: "conda.yml"
+  input: "output/realigned_reads.bam"
+  output: "output/raw_variants.vcf"
+  shell: "gatk -T HaplotypeCaller -R {REF} -I {input} -o {output}"
+
+rule extract_snps_1:
+  """Extract SNPs
+  This step separates SNPs so they can be processed and used independently
+  """
+  conda: "conda.yml"
+  input: rules.call_variants_1.output
+  output: "output/raw_snps.vcf"
+  shell: "gatk -T SelectVariants -R {REF} -V {input} -selectType SNP -o {output}"
+
+rule extract_indels_1:
+  """Extract Indels
+  This step separates Indels so they can be processed and used independently
+  """
+  conda: "conda.yml"
+  input: rules.call_variants_1.output
+  output: "output/raw_indels.vcf"
+  shell: "gatk -T SelectVariants -R {REF} -V {input} -selectType INDEL -o {output}"
+
+rule filter_snps_1:
+  conda: "conda.yml"
+  input: rules.extract_snps_1.output
+  output: "output/filtered_snps.vcf"
+  shell:
+    """
+      gatk -T VariantFiltration -R {REF} -V {input} -filterName "QD_filter" -filter "QD < 2.0" -filterName "FS_filter" -filter "FS > 60.0" -filterName "MQ_filter" -filter "MQ < 40.0" -filterName "SOR_filter" -filter "SOR > 4.0" -o {output}
+    """
+
+rule filter_indel_1:
+  conda: "conda.yml"
+  input: rules.extract_indels_1.output
+  output: "output/filtered_indels.vcf"
+  shell: 
+    """
+      gatk -T VariantFiltration -R {REF} -V {input} -filterName "QD_filter" -filter "QD < 2.0" -filterName "FS_filter" -filter "FS > 200.0" -filterName "SOR_filter" -filter "SOR > 10.0" -o {output}
+    """
+

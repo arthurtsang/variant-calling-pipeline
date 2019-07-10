@@ -1,0 +1,5 @@
+channels:
+  - bioconda
+dependencies:
+  - snpeff=4.3.1t
+  - bedtools=2.28.0

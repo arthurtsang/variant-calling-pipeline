@@ -1,0 +1,46 @@
+rule initialize:
+  input:
+    expand( "{dir}/{exp}_{read}.fastq.gz", dir = [ FASTQDIR ], exp = [ EXPERIMENT ], read = ["1", "2"]),
+    expand( "{dir}/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa.{extension}", dir = [ REFDIR ], extension = ["amb", "ann", "bwt", "pac", "sa", "fai" ]),
+    REFDIR + "/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.dict"
+  output: 
+    touch("output/initialized")
+
+# how to combine the two download rules?
+
+rule download_fastq_1:
+  """Download fastq from https://www.ebi.ac.uk/ena/data/view/SRX4093111"""
+  output: "{FASTQDIR}/{EXPERIMENT}_1.fastq.gz"
+  shell: "curl {FASTQURL}/{EXPERIMENT}/{EXPERIMENT}_1.fastq.gz -o {output}"
+
+rule download_fastq_2:
+  """Download fastq from https://www.ebi.ac.uk/ena/data/view/SRX4093111"""
+  output: "{FASTQDIR}/{EXPERIMENT}_2.fastq.gz"
+  shell: "curl {FASTQURL}/{EXPERIMENT}/{EXPERIMENT}_2.fastq.gz -o {output}"
+
+rule download_ref:
+  """Download ref from http://uswest.ensembl.org/Saccharomyces_cerevisiae/Info/Index"""
+  output: REF
+  shell: "curl {REFURL} | gzip -d > {output}"
+
+rule bwa_index_ref:
+  """Prepare ref for use with BWA, create index"""
+  input: REF
+  output: expand( "{dir}/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa.{extension}", dir = [ REFDIR ], extension = ["amb", "ann", "bwt", "pac", "sa" ])
+  conda: "conda.yml"
+  shell: "bwa index {REF}"
+
+rule fasta_file_index_ref:
+  """Prepare ref for use with GATK, create FASTA file index"""
+  input: REF
+  output: REFDIR + "/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.fa.fai"
+  conda: "conda.yml"
+  shell: "samtools faidx {REF}"
+
+rule sequence_dictionary_ref:
+  """Prepare ref for use with GATK, create sequence dictionary"""
+  input: REF
+  output: REFDIR + "/Saccharomyces_cerevisiae.R64-1-1.dna.toplevel.dict"
+  conda: "conda.yml"
+  shell: "picard CreateSequenceDictionary R={input} O={output}"
+

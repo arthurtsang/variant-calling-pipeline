@@ -1,0 +1,53 @@
+rule bqsr:
+  input:
+    "output/recal_reads.bam",
+    "output/recalibration_plots.pdf"
+  output: touch( "output/bqsr" )
+
+rule bqsr_1:
+  """Base Quality Score Recalibration (BQSR) #1
+  BQSR is performed twice. The second pass is optional, but is required to produce a recalibration report.
+  """
+  conda: "conda.yml" 
+  input: 
+    bam="output/realigned_reads.bam",
+    snps="output/filtered_snps.vcf",
+    indels="output/filtered_indels.vcf"
+  output: temp("output/recal_data.table")
+  shell: "gatk -T BaseRecalibrator -R {REF} -I {input.bam} -knownSites {input.snps} -knownSites {input.indels} -o {output}"
+
+ 
+rule bqsr_2:
+  """Base Quality Score Recalibration (BQSR) #2
+  The second time BQSR is run, it takes the output from the first run (recal_data.table) as input
+  """
+  conda: "conda.yml" 
+  input: 
+    bqsr=rules.bqsr_1.output,
+    bam=rules.bqsr_1.input.bam,
+    snps=rules.bqsr_1.input.snps,
+    indels=rules.bqsr_1.input.indels
+  output: temp( "output/post_recal_data.table" )
+  shell: "gatk -T BaseRecalibrator -R {REF} -I {input.bam} -knownSites {input.snps} -knownSites {input.indels} -BQSR {input.bqsr} -o {output}"
+
+rule analyze_covariates:
+  """	Analyze Covariates
+  This step produces a recalibration report based on the output from the two BQSR runs
+  """
+  conda: "conda.yml" 
+  input: 
+    bqsr1=rules.bqsr_1.output,
+    bqsr2=rules.bqsr_2.output
+  output: "output/recalibration_plots.pdf"
+  shell: "gatk -T AnalyzeCovariates -R {REF} -before {input.bqsr1} -after {input.bqsr2} -plots {output}"
+
+rule apply_bqsr:
+  """Apply BQSR
+  This step applies the recalibration computed in the first BQSR step to the bam file.
+  """
+  conda: "conda.yml" 
+  input:
+    bqsr=rules.bqsr_1.output,
+    bam=rules.bqsr_1.input.bam
+  output: "output/recal_reads.bam"
+  shell: "gatk -T PrintReads -R {REF} -I {input.bam} -BQSR {input.bqsr} -o {output}"

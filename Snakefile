@@ -11,7 +11,7 @@ FASTQURL="ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR717/005"
 
 include: "initialize/Snakefile"
 include: "preprocess/Snakefile"
-include: "callVariantsRealigned/Snakefile"
+include: "callVariantsDeduped/Snakefile"
 include: "callVariantsRecalibrated/Snakefile"
 include: "bqsr/Snakefile"
 include: "annotation/Snakefile"

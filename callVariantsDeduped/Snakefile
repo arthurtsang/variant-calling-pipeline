@@ -10,9 +10,9 @@ rule call_variants_1:
   First round of variant calling. The variants identified in this step will be filtered and provided as input for Base Quality Score Recalibration
   """
   conda: "conda.yml"
-  input: "output/realigned_reads.bam"
+  input: "output/dedup_reads.bam"
   output: "output/raw_variants.vcf"
-  shell: "gatk -T HaplotypeCaller -R {REF} -I {input} -o {output}"
+  shell: "gatk HaplotypeCaller -R {REF} -I {input} -O {output}"
 
 rule extract_snps_1:
   """Extract SNPs
@@ -21,7 +21,7 @@ rule extract_snps_1:
   conda: "conda.yml"
   input: rules.call_variants_1.output
   output: "output/raw_snps.vcf"
-  shell: "gatk -T SelectVariants -R {REF} -V {input} -selectType SNP -o {output}"
+  shell: "gatk SelectVariants -R {REF} -V {input} -select-type SNP -O {output}"
 
 rule extract_indels_1:
   """Extract Indels
@@ -30,7 +30,7 @@ rule extract_indels_1:
   conda: "conda.yml"
   input: rules.call_variants_1.output
   output: "output/raw_indels.vcf"
-  shell: "gatk -T SelectVariants -R {REF} -V {input} -selectType INDEL -o {output}"
+  shell: "gatk SelectVariants -R {REF} -V {input} -select-type INDEL -O {output}"
 
 rule filter_snps_1:
   conda: "conda.yml"
@@ -38,7 +38,7 @@ rule filter_snps_1:
   output: "output/filtered_snps.vcf"
   shell:
     """
-      gatk -T VariantFiltration -R {REF} -V {input} -filterName "QD_filter" -filter "QD < 2.0" -filterName "FS_filter" -filter "FS > 60.0" -filterName "MQ_filter" -filter "MQ < 40.0" -filterName "SOR_filter" -filter "SOR > 4.0" -o {output}
+      gatk VariantFiltration -R {REF} -V {input} --filter-name "QD_filter" --filter "QD < 2.0" --filter-name "FS_filter" --filter "FS > 60.0" --filter-name "MQ_filter" --filter "MQ < 40.0" --filter-name "SOR_filter" --filter "SOR > 4.0" -O {output}
     """
 
 rule filter_indel_1:
@@ -47,6 +47,6 @@ rule filter_indel_1:
   output: "output/filtered_indels.vcf"
   shell: 
     """
-      gatk -T VariantFiltration -R {REF} -V {input} -filterName "QD_filter" -filter "QD < 2.0" -filterName "FS_filter" -filter "FS > 200.0" -filterName "SOR_filter" -filter "SOR > 10.0" -o {output}
+      gatk VariantFiltration -R {REF} -V {input} --filter-name "QD_filter" --filter "QD < 2.0" --filter-name "FS_filter" --filter "FS > 200.0" --filter-name "SOR_filter" --filter "SOR > 10.0" -O {output}
     """
 

@@ -10,25 +10,34 @@ rule bqsr_1:
   """
   conda: "conda.yml" 
   input: 
-    bam="output/realigned_reads.bam",
+    bam="output/dedup_reads.bam",
     snps="output/filtered_snps.vcf",
     indels="output/filtered_indels.vcf"
   output: temp("output/recal_data.table")
-  shell: "gatk -T BaseRecalibrator -R {REF} -I {input.bam} -knownSites {input.snps} -knownSites {input.indels} -o {output}"
+  shell: "gatk BaseRecalibrator -R {REF} -I {input.bam} --known-sites {input.snps} --known-sites {input.indels} -O {output}"
 
- 
+rule apply_bqsr_1:
+  """Apply BQSR
+  This step applies the recalibration computed in the first BQSR step to the bam file.
+  """
+  conda: "conda.yml" 
+  input:
+    bqsr=rules.bqsr_1.output,
+    bam=rules.bqsr_1.input.bam
+  output: "output/recal_reads.bam"
+  shell: "gatk ApplyBQSR -R {REF} -I {input.bam} -bqsr {input.bqsr} -O {output}"
+
 rule bqsr_2:
   """Base Quality Score Recalibration (BQSR) #2
   The second time BQSR is run, it takes the output from the first run (recal_data.table) as input
   """
   conda: "conda.yml" 
   input: 
-    bqsr=rules.bqsr_1.output,
-    bam=rules.bqsr_1.input.bam,
+    bam=rules.apply_bqsr_1.output,
     snps=rules.bqsr_1.input.snps,
     indels=rules.bqsr_1.input.indels
   output: temp( "output/post_recal_data.table" )
-  shell: "gatk -T BaseRecalibrator -R {REF} -I {input.bam} -knownSites {input.snps} -knownSites {input.indels} -BQSR {input.bqsr} -o {output}"
+  shell: "gatk BaseRecalibrator -R {REF} -I {input.bam} --known-sites {input.snps} --known-sites {input.indels} -O {output}"
 
 rule analyze_covariates:
   """	Analyze Covariates
@@ -39,15 +48,4 @@ rule analyze_covariates:
     bqsr1=rules.bqsr_1.output,
     bqsr2=rules.bqsr_2.output
   output: "output/recalibration_plots.pdf"
-  shell: "gatk -T AnalyzeCovariates -R {REF} -before {input.bqsr1} -after {input.bqsr2} -plots {output}"
-
-rule apply_bqsr:
-  """Apply BQSR
-  This step applies the recalibration computed in the first BQSR step to the bam file.
-  """
-  conda: "conda.yml" 
-  input:
-    bqsr=rules.bqsr_1.output,
-    bam=rules.bqsr_1.input.bam
-  output: "output/recal_reads.bam"
-  shell: "gatk -T PrintReads -R {REF} -I {input.bam} -BQSR {input.bqsr} -o {output}"
+  shell: "gatk AnalyzeCovariates -before {input.bqsr1} -after {input.bqsr2} -plots {output}"

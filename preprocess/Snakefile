@@ -1,5 +1,5 @@
 rule preprocess:
-  input: "output/realigned_reads.bam"
+  input: "output/dedup_reads.bam.bai"
   output: touch( "output/preprocessed" )
 
 rule align_reads:
@@ -51,29 +51,5 @@ rule build_bam_index:
   """Build BAM index"""
   conda: "conda.yml"
   input: rules.dedup.output.dedup
-  output: temp( "output/dedup_reads.bai" )
-  shell: "picard BuildBamIndex INPUT={input}"
-
-rule realignment_targets:
-  """Create Realignment Targets
-  This is the first step in a two-step process of realigning around indels
-  """
-  conda: "conda.yml"
-  input: 
-    bai=rules.build_bam_index.output,
-    bam=rules.dedup.output.dedup
-  output: "output/realignment_targets.list"
-  shell: "gatk -T RealignerTargetCreator -R {REF} -I {input.bam}  -o {output}"
-
-rule realign_reads:
-  """Realign Indels
-  This step performs the realignment around the indels which were identified in the previous step (the ‘realignment targets’)
-  """
-  conda: "conda.yml"
-  input: 
-    dedupbam=rules.dedup.output.dedup,
-    dedupbai=rules.build_bam_index.output,
-    realignment=rules.realignment_targets.output
-  output: "output/realigned_reads.bam"
-  shell: "gatk -T IndelRealigner -R {REF} -I {input.dedupbam} -targetIntervals {input.realignment} -o {output}"
-
+  output: "output/dedup_reads.bam.bai"
+  shell: "samtools index {input}"

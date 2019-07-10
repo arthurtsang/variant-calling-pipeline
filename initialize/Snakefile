@@ -20,7 +20,8 @@ rule download_ref:
   """Download ref from http://uswest.ensembl.org/Saccharomyces_cerevisiae/Info/Index"""
   input: FTP.remote(REFURL, keep_local=True)
   output: REF
-  run: shell( "gzip -d {input}  > {output}" )
+  run: 
+    shell( "gzip -d {input}  > {output}" )
 
 rule bwa_index_ref:
   """Prepare ref for use with BWA, create index"""

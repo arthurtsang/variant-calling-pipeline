@@ -1,7 +1,15 @@
 channels:
   - bioconda
+  - r
+  - conda-forge
 dependencies:
   - gatk4=4.0.5.1
   - bwa=0.7.17
   - samtools=1.9
   - picard=2.18.7
+  - r
+  - r-ggplot2
+  - readline=6.2
+  - r-gplots
+  - r-reshape
+  - r-gsalib

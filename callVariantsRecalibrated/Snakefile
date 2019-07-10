@@ -11,7 +11,7 @@ rule call_variants_2:
   conda: "conda.yml"
   input: "output/recal_reads.bam"
   output: "output/raw_variants_recal.vcf"
-  shell: "gatk -T HaplotypeCaller -R {REF} -I {input} -o {output}"
+  shell: "gatk HaplotypeCaller -R {REF} -I {input} -O {output}"
 
 rule extract_snps_2:
   """Extract SNPs
@@ -20,7 +20,7 @@ rule extract_snps_2:
   conda: "conda.yml"
   input: rules.call_variants_2.output
   output: "output/raw_snps_recal.vcf"
-  shell: "gatk -T SelectVariants -R {REF} -V {input} -selectType SNP -o {output}"
+  shell: "gatk SelectVariants -R {REF} -V {input} --select-type SNP -O {output}"
 
 rule extract_indel_2:
   """Extract Indels
@@ -29,7 +29,7 @@ rule extract_indel_2:
   conda: "conda.yml"
   input: rules.call_variants_2.output
   output: "output/raw_indels_recal.vcf"
-  shell: "gatk -T SelectVariants -R {REF} -V {input} -selectType INDEL -o {output}"
+  shell: "gatk SelectVariants -R {REF} -V {input} --select-type INDEL -O {output}"
 
 rule filter_snps_2:
   """Filter SNPs
@@ -40,7 +40,7 @@ rule filter_snps_2:
   output: "output/filtered_snps_final.vcf"
   shell:
     """
-      gatk -T VariantFiltration -R {REF} -V {input} -filterName "QD_filter" -filter "QD < 2.0" -filterName "FS_filter" -filter "FS > 60.0" -filterName "MQ_filter" -filter "MQ < 40.0" -filterName "SOR_filter" -filter "SOR > 4.0" -o {output}
+      gatk VariantFiltration -R {REF} -V {input} --filter-name "QD_filter" --filter "QD < 2.0" --filter-name "FS_filter" --filter "FS > 60.0" --filter-name "MQ_filter" --filter "MQ < 40.0" --filter-name "SOR_filter" --filter "SOR > 4.0" -O {output}
     """
 
 rule filter_indel_2:
@@ -52,5 +52,5 @@ rule filter_indel_2:
   output: "output/filtered_indels_final.vcf"
   shell: 
     """
-      gatk -T VariantFiltration -R {REF} -V {input} -filterName "QD_filter" -filter "QD < 2.0" -filterName "FS_filter" -filter "FS > 200.0" -filterName "SOR_filter" -filter "SOR > 10.0" -o {output}
+      gatk VariantFiltration -R {REF} -V {input} --filter-name "QD_filter" --filter "QD < 2.0" --filter-name "FS_filter" --filter "FS > 200.0" --filter-name "SOR_filter" --filter "SOR > 10.0" -O {output}
     """

@@ -11,7 +11,7 @@ rule snpeff:
   conda: "conda.yml"
   input: "output/filtered_snps_final.vcf"
   output: "output/filtered_snps_final.ann.vcf"
-  shell: "-v {SNPEFF_DB} {input}  > {output}"
+  shell: "snpEff -v {SNPEFF_DB} {input}  > {output}"
 
 rule coverage_statistics:
   """Compute Coverage Statistics
